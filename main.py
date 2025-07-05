@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from io import BytesIO
 import os
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8136422242:AAEK02EslDjoUES_fhCaH8SuGJ4_wjsM3H4")
 loader = instaloader.Instaloader()
 
 def extract_emails_and_phones(text):
