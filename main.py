@@ -14,9 +14,10 @@ import instaloader
 session_data = os.getenv("SESSION_B64")
 if session_data:
     with open("session-instagram", "wb") as f:
-    f.write(base64.b64decode(session_data))
+        f.write(base64.b64decode(session_data))
 
-L.load_session_from_file("session-instagram")
+    L = instaloader.Instaloader()
+    L.load_session_from_file("session-instagram")
 
 # Подключаем Instaloader с авторизацией
 L = instaloader.Instaloader()
