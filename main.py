@@ -6,7 +6,19 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from io import BytesIO
 import os
+import os
+import base64
+import instaloader
 
+# Восстановим .session файл из base64
+session_data = os.getenv("SESSION_B64")
+if session_data:
+    with open("instaparse.bot.test.session", "wb") as f:
+        f.write(base64.b64decode(session_data))
+
+# Подключаем Instaloader с авторизацией
+L = instaloader.Instaloader()
+L.load_session_from_file("instaparse.bot.test")
 TOKEN = os.getenv("TOKEN")
 loader = instaloader.Instaloader()
 
