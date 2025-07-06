@@ -23,7 +23,6 @@ else:
 
 # Подключаем Instaloader с авторизацией
 L = instaloader.Instaloader()
-L.load_session_from_file("instaparse.bot.test")
 TOKEN = os.getenv("TOKEN")
 loader = instaloader.Instaloader()
 
