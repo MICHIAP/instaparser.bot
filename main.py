@@ -6,18 +6,20 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from io import BytesIO
 import os
-import os
 import base64
 import instaloader
 
-# Восстановим .session файл из base64
+# Загружаем session из переменной среды
 session_data = os.getenv("SESSION_B64")
+
 if session_data:
     with open("session-instagram", "wb") as f:
         f.write(base64.b64decode(session_data))
 
     L = instaloader.Instaloader()
     L.load_session_from_file("session-instagram")
+else:
+    print("❌ SESSION_B64 не задан — авторизация невозможна.")
 
 # Подключаем Instaloader с авторизацией
 L = instaloader.Instaloader()
