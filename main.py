@@ -1,4 +1,3 @@
-
 import re
 import instaloader
 import pandas as pd
@@ -7,24 +6,21 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from io import BytesIO
 import os
 import base64
-import instaloader
 
 # Загружаем session из переменной среды
 session_data = os.getenv("SESSION_B64")
+TOKEN = os.getenv("TOKEN")
 
+# Авторизация
 if session_data:
     with open("session-instagram", "wb") as f:
         f.write(base64.b64decode(session_data))
 
-    L = instaloader.Instaloader()
-    L.load_session_from_file("session-instagram")
+    loader = instaloader.Instaloader()
+    loader.load_session_from_file("session-instagram")
 else:
     print("❌ SESSION_B64 не задан — авторизация невозможна.")
-
-# Подключаем Instaloader с авторизацией
-L = instaloader.Instaloader()
-TOKEN = os.getenv("TOKEN")
-loader = instaloader.Instaloader()
+    loader = instaloader.Instaloader()  # всё равно создаём объект, но без сессии
 
 def extract_emails_and_phones(text):
     email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
@@ -34,7 +30,7 @@ def extract_emails_and_phones(text):
     return emails, phones
 
 def clean_usernames(text: str):
-    raw_usernames = re.split(r"[,\s\n]+", text.strip())
+    raw_usernames = re.split(r"[, \n]+", text.strip())
     return [u.lstrip("@") for u in raw_usernames if u]
 
 async def start(update: Update, context):
