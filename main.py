@@ -1,65 +1,67 @@
-import re
-import instaloader
-import pandas as pd
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from io import BytesIO
+import asyncio
 import os
-import base64
+from instagrapi import Client
+from openpyxl import Workbook
 
-# Загружаем session из переменной среды
-session_data = os.getenv("SESSION_B64")
-TOKEN = os.getenv("TOKEN")
+# Загружаем сессионный ключ из переменной окружения
+SESSION_B64 = os.getenv("SESSION_B64")
 
-# Авторизация
-if session_data:
-    with open("session-instagram", "wb") as f:
-        f.write(base64.b64decode(session_data))
+# Запрашиваем username у пользователя
+target_username = input("Введите username Instagram-аккаунта для парсинга: ")
 
-    loader = instaloader.Instaloader()
-    loader.load_session_from_file("session-instagram")
-else:
-    print("❌ SESSION_B64 не задан — авторизация невозможна.")
-    loader = instaloader.Instaloader()  # всё равно создаём объект, но без сессии
+async def main():
+    # Подключение к Instagram
+    cl = Client()
+    cl.load_settings({})
+    cl.set_locale('en_US')
+    cl.set_timezone_offset(10800)
+    cl.set_country_code(1)
 
-def extract_emails_and_phones(text):
-    email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-    phone_pattern = r"(\+\d[\d\s().-]{7,}\d)"
-    emails = re.findall(email_pattern, text)
-    phones = re.findall(phone_pattern, text)
-    return emails, phones
+    # Авторизация по session
+    cl.set_device(cl.generate_device())
+    cl.load_settings({})
+    cl.login_by_sessionid(SESSION_B64)
 
-def clean_usernames(text: str):
-    raw_usernames = re.split(r"[, \n]+", text.strip())
-    return [u.lstrip("@") for u in raw_usernames if u]
+    print(f"🔍 Парсим активную аудиторию с @{target_username}...")
 
-async def start(update: Update, context):
-    await update.message.reply_text("Отправь список Instagram-юзернеймов через запятую или с новой строки.")
+    user_id = cl.user_id_from_username(target_username)
+    medias = cl.user_medias(user_id, 10)
 
-async def handle_message(update: Update, context):
-    usernames = clean_usernames(update.message.text)
-    results = []
+    active_users = set()
 
-    for username in usernames:
+    for media in medias:
+        # Сбор лайков
+        likers = cl.media_likers(media.id)
+        for liker in likers:
+            active_users.add(liker.username)
+
+        # Сбор комментариев
+        comments = cl.media_comments(media.id, amount=100)
+        for comment in comments:
+            active_users.add(comment.user.username)
+
+    print(f"✅ Найдено активных пользователей: {len(active_users)}")
+
+    # Сбор email из bios
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Username", "Email"])
+
+    for username in active_users:
         try:
-            profile = instaloader.Profile.from_username(loader.context, username)
-            bio = profile.biography
-            emails, phones = extract_emails_and_phones(bio)
-            results.append({"username": username, "emails": emails, "phones": phones})
+            user_info = cl.user_info_by_username(username)
+            bio = user_info.biography
+            if "@" in bio:
+                parts = bio.split()
+                for part in parts:
+                    if "@" in part and "." in part:
+                        email = part.strip(",. \n")
+                        sheet.append([username, email])
+                        break
         except Exception as e:
-            results.append({"username": username, "emails": [], "phones": [], "error": str(e)})
+            continue
 
-    df = pd.DataFrame(results)
-    excel_buffer = BytesIO()
-    df.to_excel(excel_buffer, index=False)
-    excel_buffer.seek(0)
-    await update.message.reply_document(document=excel_buffer, filename="results.xlsx")
+    workbook.save("Результаты.xlsx")
+    print("💾 Сохранено в файл Результаты.xlsx")
 
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+asyncio.run(main())
