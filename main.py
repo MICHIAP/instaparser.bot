@@ -61,7 +61,7 @@ async def main():
         except Exception as e:
             continue
 
-    workbook.save("Результаты.xlsx")
-    print("💾 Сохранено в файл Результаты.xlsx")
+    workbook.save("results.xlsx")
+    print("💾 Сохранено в файл results.xlsx")
 
 asyncio.run(main())
