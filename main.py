@@ -129,13 +129,13 @@ async def start_cmd(message: types.Message):
     await message.answer(
         "🎧 Привет! Отправь мне .mp3 или голосовое — я найду все возможные совпадения.\n"
         f"Бесплатно: {FREE_LIMIT} запросов в день.\n"
-        "Подписка (безлимит) — 299⭐ в месяц.\n"
+        "Подписка (безлимит) — 200⭐ в месяц.\n"
         "Оплатить — /pay"
     )
 
 @dp.message(F.text == "/pay")
 async def pay_cmd(message: types.Message):
-    prices = [LabeledPrice(label="Подписка 1 месяц", amount=299)]
+    prices = [LabeledPrice(label="Подписка 1 месяц", amount=200)]
     await bot.send_invoice(
         chat_id=message.chat.id,
         title="Подписка BeatScanner",
